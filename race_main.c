@@ -4,6 +4,7 @@
 #include "drenums.h"
 #include "drmath.h"
 #include "sfx.h"
+#include "local2p.h"
 #include "drally_structs_free.h"
 
 #if defined(DR_MULTIPLAYER)
@@ -152,6 +153,11 @@ static void helper01(void (*cb)(int)){
 	while(++n < NUM_OF_CARS) cb(n);
 }
 
+/* local 2P split-screen temp frames (full 0x200 x 0xc8 views) */
+static __BYTE__ l2p_top[0x200*0xc8];
+static __BYTE__ l2p_bot[0x200*0xc8];
+static __BYTE__ l2p_comp[0x200*0xc8];
+
 static __WORD__ helper22(const char * cp){
 
 	if(!strcmp(cp, "TR0")) return 0x1e00;
@@ -200,7 +206,7 @@ static void race___4b62ch_helper(int n){
 #if defined(DR_MULTIPLAYER)
 		if(___19bd60h == 0){
 #endif // DR_MULTIPLAYER
-			if(MY_CAR_IDX != n) race___4b62ch(n);
+			if(MY_CAR_IDX != n && !local2p_is_p2(n)) race___4b62ch(n);
 #if defined(DR_MULTIPLAYER)
 		}
 #endif // DR_MULTIPLAYER
@@ -230,6 +236,9 @@ void race_main(int MyIndex, int NumCars){		// my_position_index, number_of_racer
 	s_35e = (struct_35e_t *)___1e6ed0h;
 	MY_CAR_IDX = MyIndex;
 	NUM_OF_CARS = NumCars;
+	if(local2p_is_enabled() && NUM_OF_CARS < 2) NUM_OF_CARS = 2;
+	if(local2p_is_enabled() && NUM_OF_CARS > 4) NUM_OF_CARS = 4;
+	local2p_set_race(MY_CAR_IDX, NUM_OF_CARS);
 	race___3f970h();
 	race___49a34h();
 
@@ -310,6 +319,7 @@ void race_main(int MyIndex, int NumCars){		// my_position_index, number_of_racer
 		setCounter(5, getCounter(2));
 		resetCounter(2);
 		s_35e[MY_CAR_IDX].__a4 = s_35e[MY_CAR_IDX].ActionFlags_i;
+		if(local2p_is_enabled()) s_35e[local2p_p2_idx()].__a4 = s_35e[local2p_p2_idx()].ActionFlags_i;
 
 		if((int)D(___196df0h) > 0){
 
@@ -336,6 +346,12 @@ void race_main(int MyIndex, int NumCars){		// my_position_index, number_of_racer
 				if((int)s_35e[MY_CAR_IDX].__a4 < 0) s_35e[MY_CAR_IDX].__a4 = 0xf;
 				D(___243d08h)++;
 				s_35e[MY_CAR_IDX].Ctrls[getCounter(5)-D(___243d08h)] = s_35e[MY_CAR_IDX].ActionFlags[s_35e[MY_CAR_IDX].__a4];
+				if(local2p_is_enabled()){
+					int _p2 = local2p_p2_idx();
+					s_35e[_p2].__a4--;
+					if((int)s_35e[_p2].__a4 < 0) s_35e[_p2].__a4 = 0xf;
+					s_35e[_p2].Ctrls[getCounter(5)-D(___243d08h)] = s_35e[_p2].ActionFlags[s_35e[_p2].__a4];
+				}
 				if((int)D(___243d08h) >= (int)getCounter(5)) break;
 			}
 		}
@@ -614,6 +630,7 @@ void race_main(int MyIndex, int NumCars){		// my_position_index, number_of_racer
 
 		frames = __GET_FRAME_COUNTER();
 
+		if(!local2p_is_enabled()){
 		race___4ee9ch();
 		race___4f030h();
 
@@ -661,6 +678,80 @@ void race_main(int MyIndex, int NumCars){		// my_position_index, number_of_racer
 		while(++D(___243c60h) < NUM_OF_CARS){
 
 			if((s_35e[D(___243c60h)].Position == 1)&&(D(___196dd4h) != 0)) race___4207ch();
+		}
+		}
+		else {
+			/* --2p split-screen: two full renders, centered 100-line crops */
+			int _saved = (int)MY_CAR_IDX;
+			int _p2 = local2p_p2_idx();
+			int _r;
+			/* pass 0: P1 */
+			MY_CAR_IDX = (unsigned)_saved; local2p_cam_load(0);
+			race___4ee9ch(); race___4f030h();
+			ecx = CURRENT_VIEWPORT_W+4; ecx -= ecx&3;
+			m = -1; while(++m < 0xc8) memcpy(BACKBUFFER+0x200*m+CURRENT_VIEWPORT_X+0x60, TRX_IMA+TRX_WIDTH*(TRX_VIEWPORT_TL_Y+m)+TRX_VIEWPORT_TL_X, ecx);
+#if defined(DR_MULTIPLAYER)
+			if(___19bd60h == 0)
+#endif
+				race___52d7ch();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50ef4h();
+			race___4f300h(); race___51ce0h();
+			if(dRally_Race_getSettings(RACE_SHADOWS)) race___4f170h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50a48h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___51204h();
+			race___53310h(); race___53464h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50ba4h();
+			race___51eb4h();
+			if((int)getCounter(1) < 0x122) race___42218h();
+			D(___243c60h) = -1;
+			while(++D(___243c60h) < NUM_OF_CARS){ if((s_35e[D(___243c60h)].Position == 1)&&(D(___196dd4h) != 0)) race___4207ch(); }
+			memcpy(l2p_top, BACKBUFFER, 0x200*0xc8); local2p_cam_save(0);
+			/* pass 1: P2 */
+			MY_CAR_IDX = (unsigned)_p2; local2p_cam_load(1);
+			race___4ee9ch(); race___4f030h();
+			ecx = CURRENT_VIEWPORT_W+4; ecx -= ecx&3;
+			m = -1; while(++m < 0xc8) memcpy(BACKBUFFER+0x200*m+CURRENT_VIEWPORT_X+0x60, TRX_IMA+TRX_WIDTH*(TRX_VIEWPORT_TL_Y+m)+TRX_VIEWPORT_TL_X, ecx);
+#if defined(DR_MULTIPLAYER)
+			if(___19bd60h == 0)
+#endif
+				race___52d7ch();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50ef4h();
+			race___4f300h(); race___51ce0h();
+			if(dRally_Race_getSettings(RACE_SHADOWS)) race___4f170h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50a48h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___51204h();
+			race___53310h(); race___53464h();
+			D(___243c60h) = -1; while(++D(___243c60h) < NUM_OF_CARS) race___50ba4h();
+			race___51eb4h();
+			if((int)getCounter(1) < 0x122) race___42218h();
+			D(___243c60h) = -1;
+			while(++D(___243c60h) < NUM_OF_CARS){ if((s_35e[D(___243c60h)].Position == 1)&&(D(___196dd4h) != 0)) race___4207ch(); }
+			memcpy(l2p_bot, BACKBUFFER, 0x200*0xc8); local2p_cam_save(1);
+			/* composite centered crops: lines 50..149 of each view */
+			for(_r = 0; _r < 100; _r++){
+				memcpy(BACKBUFFER+0x200*_r, l2p_top+0x200*(_r+50), 0x200);
+				memcpy(BACKBUFFER+0x200*(_r+100), l2p_bot+0x200*(_r+50), 0x200);
+			}
+			memcpy(l2p_comp, BACKBUFFER, 0x200*0xc8);
+			/* HUD per half: redraw over the FULL view (in-bounds), then re-crop.
+			   (HUD draws down to ~row 175, so it must never run on a shifted base.) */
+			MY_CAR_IDX = (unsigned)_saved;
+			memcpy(BACKBUFFER, l2p_top, 0x200*0xc8);
+			(CURRENT_VIEWPORT_W != 0x140) ? race___40f48h() : race___40db4h();
+			for(_r = 0; _r < 100; _r++) memcpy(l2p_comp+0x200*_r, BACKBUFFER+0x200*(_r+50), 0x200);
+			MY_CAR_IDX = (unsigned)_p2;
+			memcpy(BACKBUFFER, l2p_bot, 0x200*0xc8);
+			(CURRENT_VIEWPORT_W != 0x140) ? race___40f48h() : race___40db4h();
+			for(_r = 0; _r < 100; _r++) memcpy(l2p_comp+0x200*(_r+100), BACKBUFFER+0x200*(_r+50), 0x200);
+			memcpy(BACKBUFFER, l2p_comp, 0x200*0xc8);
+			memset(BACKBUFFER+0x200*100, 0, 0x200);
+			/* cheats once */
+#if defined(DR_MULTIPLAYER)
+			if(___19bd60h == 0)
+#endif
+				race___56594h();
+			MY_CAR_IDX = (unsigned)_saved;
+			local2p_cam_load(0);
 		}
 
 		if((int)D(___2438c8h) > 0x12c){

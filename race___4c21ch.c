@@ -1,5 +1,6 @@
 #include "drally.h"
 #include "drally_structs_free.h"
+#include "local2p.h"
 
 	const float ___3f6ech[6] = { 0.07f, 0.12f, 0.11f, 0.20f, 0.18f, 0.32f };
  	const float ___3f704h[6] = { 0.12f, 0.19f, 0.06f, 0.12f, 0.03f, 0.06f };
@@ -35,7 +36,7 @@ void race___4c21ch(void){
 
 		diff_f = 1.0f;
 
-		if((n != MY_CAR_IDX)||(D(___243ce0h) != 0)){
+		if((n != MY_CAR_IDX)&&!local2p_is_p2(n)||(D(___243ce0h) != 0)){
 
 			if((int)D(___1de580h+0x94*n+0x18) > 0){
 					

@@ -170,11 +170,29 @@ void DISPLAY_CLEAR_PALETTE(void){
 	while(++n < 0x100) __DISPLAY_SET_PALETTE_COLOR(0, 0, 0, n);
 }
 
+static int GX_Fullscreen = 0;
+
+void dRally_Display_setFullscreen(int on){
+
+	GX_Fullscreen = on ? 1 : 0;
+	if(GX.Window) SDL_SetWindowFullscreen(GX.Window, GX_Fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+}
+
+int dRally_Display_isFullscreen(void){
+
+	return GX_Fullscreen;
+}
+
+void dRally_Display_toggleFullscreen(void){
+
+	dRally_Display_setFullscreen(!GX_Fullscreen);
+	printf("[dRally.DISPLAY] Fullscreen %s\n", GX_Fullscreen ? "ON" : "OFF");
+}
+
 void dRally_Display_init(int mode){
 
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_DisableScreenSaver();
-
 	if(!GX.VGA13.Surface){
 
 		switch(mode){
@@ -204,7 +222,7 @@ void dRally_Display_init(int mode){
 			SDL_WINDOWPOS_CENTERED,       						// initial y position
 			W_WIDTH,                  							// width, in pixels
 			W_HEIGHT,											// height, in pixels
-			SDL_WINDOW_HIDDEN									// flags - see below
+			SDL_WINDOW_HIDDEN | (GX_Fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0)
 		);
 	}
 

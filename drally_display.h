@@ -11,5 +11,8 @@ enum { W_SHRINK, W_LETTERBOX};
 
 void dRally_Display_init(int mode);
 void dRally_Display_clean(void);
+void dRally_Display_setFullscreen(int on);
+int dRally_Display_isFullscreen(void);
+void dRally_Display_toggleFullscreen(void);
 
 #endif // __DRALLY_DISPLAY

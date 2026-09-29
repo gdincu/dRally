@@ -1,6 +1,7 @@
 #include "drally.h"
 #include "drally_keyboard.h"
 #include "drally_structs_free.h"
+#include "local2p.h"
 
 #define CTRL_NULL			0x00
 #define CTRL_ACCELERATE		0x01
@@ -130,8 +131,31 @@ void race___40164h(void){
 #endif // DR_GAMEPAD
 
 		if(aFlags&CTRL_TURBO_BOOST) aFlags |= CTRL_ACCELERATE;
+		aFlags |= local2p_poll_pad(0);
+		if((aFlags&CTRL_BRAKE)&&(aFlags&CTRL_DROP_MINE)) aFlags &= ~CTRL_BRAKE;
+		if(aFlags&CTRL_TURBO_BOOST) aFlags |= CTRL_ACCELERATE;
 		s_35e[MY_CAR_IDX].ActionFlags[s_35e[MY_CAR_IDX].ActionFlags_i++] = aFlags;
 		s_35e[MY_CAR_IDX].ActionFlags_i &= 0xf;
+
+		if(local2p_is_enabled()){
+			__DWORD__ bFlags = local2p_poll_pad(1);
+			/* P2 keyboard fallback: W/S/Q/E + R/F/G, H horn (avoids P1 A/Z/arrows) */
+			if(kmap[DR_SCAN_W]) bFlags |= CTRL_ACCELERATE;
+			if(kmap[DR_SCAN_S]) bFlags |= CTRL_BRAKE;
+			if(kmap[DR_SCAN_Q]) bFlags |= CTRL_STEER_LEFT;
+			if(kmap[DR_SCAN_E]) bFlags |= CTRL_STEER_RIGHT;
+			if(kmap[DR_SCAN_R]) bFlags |= CTRL_TURBO_BOOST;
+			if(kmap[DR_SCAN_F]) bFlags |= CTRL_MACHINE_GUN;
+			if(kmap[DR_SCAN_G]){ bFlags |= CTRL_DROP_MINE; kmap[DR_SCAN_G] = 0; }
+			if(kmap[DR_SCAN_H]) bFlags |= CTRL_HORN;
+			if((bFlags&CTRL_BRAKE)&&(bFlags&CTRL_DROP_MINE)) bFlags &= ~CTRL_BRAKE;
+			if(bFlags&CTRL_TURBO_BOOST) bFlags |= CTRL_ACCELERATE;
+			{
+				int p2 = local2p_p2_idx();
+				s_35e[p2].ActionFlags[s_35e[p2].ActionFlags_i++] = bFlags;
+				s_35e[p2].ActionFlags_i &= 0xf;
+			}
+		}
 
 #if defined(DR_MULTIPLAYER)
 		if((___19bd60h != 0)&&(D(___24387ch) != 0)){

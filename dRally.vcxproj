@@ -138,6 +138,7 @@
     <ClCompile Include="___12200h.c" />
     <ClCompile Include="cinem.c" />
     <ClCompile Include="keyboard.c" />
+    <ClCompile Include="local2p.c" />
     <ClCompile Include="network.c" />
     <ClCompile Include="db_ipx.c" />
     <ClCompile Include="gfx.c" />
@@ -405,6 +406,7 @@
     <ClInclude Include="drally_display.h" />
     <ClInclude Include="drally_ipx.h" />
     <ClInclude Include="drally_keyboard.h" />
+    <ClInclude Include="local2p.h" />
     <ClInclude Include="drally_race.h" />
     <ClInclude Include="drally_structs_fixed.h" />
     <ClInclude Include="drally_structs_free.h" />
