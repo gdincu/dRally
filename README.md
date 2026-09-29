@@ -2,6 +2,9 @@
 
 > This is a fork that adds split-screen multiplayer using 2 controllers connected to the same PC, as well as fullscreen support.
 
+<img width="958" height="539" alt="image" src="https://github.com/user-attachments/assets/e182dd98-e95a-41eb-ae9b-fd195430cbb1" />
+
+
 #### Running
 
 ```sh
