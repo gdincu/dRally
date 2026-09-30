@@ -12,4 +12,4 @@ dRally --2p --fullscreen
 ```
 
 * `--2p` — split-screen multiplayer: top half = player 1 (first controller / arrows), bottom half = player 2 (second controller / `W/S/Q/E`)
-* `--fullscreen` (`-f`) — start in borderless fullscreen; `Alt+Enter` toggles fullscreen at any time; `--windowed` (`-w`) forces windowed mode 
+* `--fullscreen` (`-f`) — start in borderless fullscreen; `Alt+Enter` toggles fullscreen at any time; `--windowed` (`-w`) forces windowed mode
